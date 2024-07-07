@@ -9,6 +9,7 @@ type State = {
   userRequest: string;
   query: string;
   clickOnError: boolean;
+  isLoading: boolean;
 };
 
 export default class Search extends React.Component<Props, State> {
@@ -16,9 +17,10 @@ export default class Search extends React.Component<Props, State> {
     super(props);
     this.state = {
       search: [],
-      userRequest: "",
+      userRequest: localStorage.getItem("prevQuery") || "",
       query: "",
       clickOnError: false,
+      isLoading: false
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -30,11 +32,8 @@ export default class Search extends React.Component<Props, State> {
     localStorage.setItem("prevQuery", "");
   }
 
-  componentWillUnmount() {
-    localStorage.clear();
-  }
-
   async fetchData() {
+    this.setState({isLoading: true});
     return fetch(
       `https://swapi.dev/api/people?search=${this.state.userRequest}`,
       {
@@ -48,9 +47,8 @@ export default class Search extends React.Component<Props, State> {
       .then((res) => this.setState({ search: res.results }))
       .then(() => localStorage.setItem("prevQuery", this.state.userRequest))
       .then(() => this.setState({ query: this.state.userRequest }))
-      .catch(() => {
-        throw new Error("API ERROR");
-      });
+      .catch(() => {throw new Error("API ERROR");})
+      .finally(() => this.setState({isLoading: false}))
   }
 
   handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,20 +71,20 @@ export default class Search extends React.Component<Props, State> {
       throw new Error("Error by click");
     }
     return (
-      <>
-        <form className={styles.search} onSubmit={this.handleSubmit}>
-          <input
-            type="text"
-            value={this.state.userRequest}
-            className={styles.searchInput}
-            onChange={this.handleChange}
-            placeholder="search"
-          ></input>
-          <input type="submit" value="Search" />
-        </form>
-        <button onClick={this.handleClick}>Error</button>
-        <SearchResult result={this.state.search} />
-      </>
+        <>
+          <form className={styles.search} onSubmit={this.handleSubmit}>
+            <input
+              type="text"
+              value={this.state.userRequest}
+              className={styles.searchInput}
+              onChange={this.handleChange}
+              placeholder="search"
+            ></input>
+            <input type="submit" value="Search" />
+          </form>
+          <button onClick={this.handleClick}>Error</button>
+          {this.state.isLoading ? <p>Loading... Please, Wwit</p> : <SearchResult result={this.state.search} />}
+        </>
     );
   }
 }
